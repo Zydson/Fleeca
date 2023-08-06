@@ -33,21 +33,23 @@ CreateThread(function()
 			local playerCoords = GetEntityCoords(ped)
 			for a,b in pairs(ZYD.Heists) do
 				for c,d in pairs(b.Doors) do
-					if not d.obj[3] and #(playerCoords-d.hack["Coords"]) < 1.0 then
+					if not d.obj[3] and #(playerCoords-d.hack["Coords"]) < 1.0 and veh == 0 then
 						if c == "Second" and not b.Doors["First"].obj[3] then break end
 						found = true
-						ESX.ShowHelpNotification("Naciśnij ~INPUT_CONTEXT~ aby rozpocząć hacka")
+						ESX.ShowHelpNotification(d.hack["Notifications"]["Help"])
 						if IsControlJustPressed(0,51) then
 							ESX.TriggerServerCallback("Fleeca:Cooldown", function(can)
 								if can or c == "Second" then
 								ESX.TriggerServerCallback("Fleeca:HasItem", function(has)
 									if has then
 										local res = StartHack(d.hack)
-										if res then
-											ESX.ShowNotification("Hack udany")
+										if res == nil then
+											--
+										elseif res then
+											ESX.ShowNotification(d.hack["Notifications"]["Success"])
 											TriggerServerEvent("Fleeca:OpenDoors",a,c,GetToken())
-										else
-											ESX.ShowNotification("Hack nieudany")
+										elseif not res then
+											ESX.ShowNotification(d.hack["Notifications"]["Failure"])
 										end
 									else
 										ESX.ShowNotification("Nie posiadasz odpowiednich przedmiotów")
@@ -64,7 +66,7 @@ CreateThread(function()
 			if not found then
 				Wait(1000)
 			end
-			Wait(1)
+			Wait(3)
 		else
 			Wait(5000)
 		end
@@ -87,6 +89,7 @@ end)
 --[[Hack]]--
 StartHack = function(hack)
 	local timeout = 0
+	SetCurrentPedWeapon(ped, `WEAPON_UNARMED`,true)
 	DisabledKey = 73
 	if #(GetEntityCoords(ped)-hack["Coords"]) > 0.02 then
 		TaskGoStraightToCoord(ped, hack["Coords"], 1.0, -1, hack["Heading"], 0)
@@ -103,17 +106,36 @@ StartHack = function(hack)
 	end
 	FreezeEntityPosition(ped,true)
 	
-	local lib,anim = hack["Animation"][1], hack["Animation"][2]
+	local lib,anim,flag = hack["Animation"][1], hack["Animation"][2], hack["Animation"][3]
 	RequestAnimDict(lib)
 	while not HasAnimDictLoaded(lib) do
-		Citizen.Wait(0)
+		Wait(1)
 	end
-	TaskPlayAnim(ped, lib, anim, 8.0, 8.0, -1, 0, 0, false, false, false)
-	Wait(1000)
+
+	TaskPlayAnimAdvanced(ped, lib, anim, hack["Coords"], 0.0, 0.0, hack["Heading"], 1.0, -1.0, -1, flag, 0.0, 0, 0)
 	local res
 
 	if hack["Type"] == "keypad" then
+		Wait(750)
 		-- HACK
+	elseif hack["Type"] == "drill" then
+		RequestModel(`hei_prop_heist_drill`)
+		while not HasModelLoaded(`hei_prop_heist_drill`) do
+			Wait(1)
+		end
+		local drill = CreateObject(`hei_prop_heist_drill`, 1.0, 1.0, 1.0, 1, 1, 0)
+		AttachEntityToEntity(drill, ped, GetPedBoneIndex(ped, 28422), 0.0, 0, 0.0, 0.0, 0.0, 0.0, 1, 1, 0, 0, 2, 1)
+		ShakeGameplayCam("VIBRATE_SHAKE", 1.5)
+		TriggerEvent("Drilling:Start",function(status)
+			if (status == 1) then
+				res = true
+			elseif (status == 2) then
+				res = false
+			end
+		end)
+		ClearPedTasks(ped)
+		DeleteEntity(drill)
+		StopGameplayCamShaking(true)
 	end
 
 	DisabledKey = 0
