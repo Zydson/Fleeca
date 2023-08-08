@@ -4,12 +4,17 @@ ZYD = {
 		Cooldown = 3600, -- Seconds
 		RequiredCops = 0,
 		Rewards = { --  Types: item, money | Count: {min,max} | Chances: 1-100
-			{type = "item", item = "goldwatch", count = {1,3}, chances = 50},
 			{type = "money", account = "black_money", count = {1000,5000}, chances = 100}
 		}
 	},
+
 	Heists = {
 		["Fleeca Bank (Vespucci Blvd.)"] = {
+			Loot = {
+				{vector3(146.671082, -1049.883545, 28.825514), 87.81},
+				{vector3(149.451538, -1051.175781, 28.826668),161.95},
+				{vector3(150.540024, -1048.417114, 28.832388),301.55}
+			},
 			Doors = {
 				["First"] = {
 					obj = {2121050683, vector3(148.026611, -1044.363892, 29.506931), false, 249.8, 160.0, false}, -- Doors hash, coords, state, deafult heading, opened heading, collision
@@ -20,7 +25,7 @@ ZYD = {
 							["Success"] = "Udało ci się przewiercić drzwi",
 							["Failure"] = "Wiertło się przegrzało i pękło",
 						},
-						["Coords"] = vector3(146.57096862793, -1045.8447265625, 29.368049621582),
+						["Coords"] = vector3(146.97480773926, -1045.1481933594, 29.36802482605),
 						["Heading"] = 251.3,
 						["ItemRequired"] = "drill",
 						["RemoveItem"] = true,
