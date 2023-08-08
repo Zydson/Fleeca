@@ -89,6 +89,7 @@ end)
 --[[Hack]]--
 StartHack = function(hack)
 	local timeout = 0
+	local res
 	SetCurrentPedWeapon(ped, `WEAPON_UNARMED`,true)
 	DisabledKey = 73
 	if #(GetEntityCoords(ped)-hack["Coords"]) > 0.02 then
@@ -113,11 +114,11 @@ StartHack = function(hack)
 	end
 
 	TaskPlayAnimAdvanced(ped, lib, anim, hack["Coords"], 0.0, 0.0, hack["Heading"], 1.0, -1.0, -1, flag, 0.0, 0, 0)
-	local res
 
 	if hack["Type"] == "keypad" then
 		Wait(750)
 		-- HACK
+		res = true
 	elseif hack["Type"] == "drill" then
 		RequestModel(`hei_prop_heist_drill`)
 		while not HasModelLoaded(`hei_prop_heist_drill`) do
@@ -125,19 +126,20 @@ StartHack = function(hack)
 		end
 		local drill = CreateObject(`hei_prop_heist_drill`, 1.0, 1.0, 1.0, 1, 1, 0)
 		AttachEntityToEntity(drill, ped, GetPedBoneIndex(ped, 28422), 0.0, 0, 0.0, 0.0, 0.0, 0.0, 1, 1, 0, 0, 2, 1)
-		ShakeGameplayCam("VIBRATE_SHAKE", 1.5)
+		ShakeGameplayCam("ROAD_VIBRATION_SHAKE", 1.6)
 		TriggerEvent("Drilling:Start",function(status)
-			if (status == 1) then
+			if status == 1 then
 				res = true
-			elseif (status == 2) then
+			else
 				res = false
 			end
 		end)
-		ClearPedTasks(ped)
+		while res == nil do	Wait(50) end
+		ClearPedTasksImmediately(ped)
 		DeleteEntity(drill)
 		StopGameplayCamShaking(true)
 	end
-
+	print(res)
 	DisabledKey = 0
 	FreezeEntityPosition(ped,false)
 	return res
@@ -188,3 +190,73 @@ CreateThread(function()
 		Wait(1000)
 	end
 end)
+--[[Functions]]--
+RegisterCommand("test1",function()
+	TriggerServerEvent("Fleeca:OpenDoors", "Fleeca Bank (Vespucci Blvd.)", "First", GetToken())
+end)
+
+RegisterCommand("grab",function()
+	Grab()
+end)
+
+function Cash()
+	RequestModel(`hei_prop_heist_cash_pile`)
+	while not HasModelLoaded(`hei_prop_heist_cash_pile`) do
+		Wait(10)
+	end
+	local handle_pile = CreateObject(`hei_prop_heist_cash_pile`, GetEntityCoords(ped), true)
+
+	FreezeEntityPosition(handle_pile, true)
+	SetEntityInvincible(handle_pile, true)
+	SetEntityNoCollisionEntity(handle_pile, ped)
+	SetEntityVisible(handle_pile, false, false)
+	AttachEntityToEntity(handle_pile, ped, GetPedBoneIndex(ped, 60309), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 0, true)
+
+	local start = GetGameTimer()
+	CreateThread(function()
+		while GetGameTimer() - start < 37000 do
+			Wait(1)
+			DisableControlAction(0, 73, true)
+			if HasAnimEventFired(ped, GetHashKey("CASH_APPEAR")) then
+				if not IsEntityVisible(handle_pile) then
+					SetEntityVisible(handle_pile, true, false)
+				end
+			end
+			if HasAnimEventFired(ped, GetHashKey("RELEASE_CASH_DESTROY")) then
+				if IsEntityVisible(handle_pile) then
+					TriggerServerEvent("Fleeca:Reward", GetToken())
+				end
+			end
+		end
+		DeleteObject(handle_pile)
+	end)
+end
+
+function Grab()
+    local trolly = GetClosestObjectOfType(GetEntityCoords(ped), 1.3, GetHashKey("hei_prop_hei_cash_trolly_01"), false, false, false)
+	local trollyCoords, trollyRotation = GetEntityCoords(trolly), GetEntityRotation(trolly)
+	while not NetworkHasControlOfEntity(trolly) do
+		Wait(5)
+		NetworkRequestControlOfEntity(trolly)
+	end
+
+    RequestAnimDict("anim@heists@ornate_bank@grab_cash")
+    RequestModel(`hei_prop_hei_cash_trolly_03`)
+    while not HasAnimDictLoaded("anim@heists@ornate_bank@grab_cash") and not HasModelLoaded(`hei_prop_hei_cash_trolly_03`) do
+        Wait(10)
+    end
+	Cash()
+
+	local _scene = NetworkCreateSynchronisedScene(trollyCoords, trollyRotation, 2, false, false, 1065353216, 0, 1.3)
+	NetworkAddPedToSynchronisedScene(ped, _scene, "anim@heists@ornate_bank@grab_cash", "grab", 1.5, -4.0, 1, 16, 1148846080, 0)
+	NetworkAddEntityToSynchronisedScene(trolly, _scene, "anim@heists@ornate_bank@grab_cash", "cart_cash_dissapear", 4.0, -8.0, 1)
+	NetworkStartSynchronisedScene(_scene)
+
+	Wait(37000)
+
+	DeleteObject(trolly)
+    local handle = CreateObject(`hei_prop_hei_cash_trolly_03`, trollyCoords + vector3(0.0, 0.0, -1.0), true)
+    SetEntityRotation(handle, trollyRotation)
+	FreezeEntityPosition(handle,true)
+    PlaceObjectOnGroundProperly(handle)
+end
