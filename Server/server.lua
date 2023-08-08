@@ -1,7 +1,6 @@
 ---@diagnostic disable: param-type-mismatch
 ZYD.TokenLoaded = {}
-ZYD.LastHeist = 0
-
+ZYD.Cooldown = true
 ValidateToken = function(token)
 	local s = os.time()
 	local fraudScore = 0
@@ -55,7 +54,12 @@ RegisterNetEvent("Fleeca:OpenDoors")
 AddEventHandler("Fleeca:OpenDoors", function(main,doors,token)
 	if ValidateToken(token) then
 		if doors == "First" then
-			ZYD.LastHeist = os.time()
+			StartCooldown()
+			for _,b in pairs(ZYD.Heists[main].Loot) do
+				local handle = CreateObject(`hei_prop_hei_cash_trolly_01`, b[1].x, b[1].y, b[1].z-0.5, true, true, false)
+				SetEntityHeading(handle,b[2]+180.0)
+				FreezeEntityPosition(handle,true)
+			end
 			-- TODO: notify police
 		end
 		ZYD.Heists[main].Doors[doors].obj[3] = true
@@ -67,8 +71,8 @@ RegisterNetEvent("Fleeca:Reward")
 AddEventHandler("Fleeca:Reward", function(token)
 	if ValidateToken(token) then
 		local xPlayer = ESX.GetPlayerFromId(source)
-		for a,b in pairs(ZYD.Config.Rewards) do
-			if b.chances <= math.random(1,100) then
+		for _,b in pairs(ZYD.Config.Rewards) do
+			if b.chances >= math.random(1,100) then
 				if b.type == "item" then
 					xPlayer.addInventoryItem(b.item, math.random(b.count[1],b.count[2]))
 				else
@@ -89,5 +93,20 @@ ESX.RegisterServerCallback("Fleeca:HasItem", function(source,cb,item,remove)
 end)
 
 ESX.RegisterServerCallback("Fleeca:Cooldown", function(source,cb)
-	cb(ZYD.LastHeist+ZYD.Config.Cooldown-os.time()<=0)
+	cb(ZYD.Cooldown)
 end)
+
+--[[Functions]]--
+function StartCooldown()
+	CreateThread(function()
+		ZYD.Cooldown = false
+		Wait(ZYD.Config.Cooldown*1000)
+		ZYD.Cooldown = true
+		for _,b in pairs(GetAllObjects()) do
+			Wait(0)
+			if GetEntityModel(b) == `hei_prop_hei_cash_trolly_01` or GetEntityModel(b) == `hei_prop_hei_cash_trolly_03` then
+				DeleteEntity(b)
+			end
+		end
+	end)
+end
