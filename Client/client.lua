@@ -28,23 +28,24 @@ end)
 --[[Main thread]]--
 CreateThread(function()
 	while true do
-		if exports["esx_scoreboard"]:GetAllPlayers()["police"] or 0 >= ZYD.Config.RequiredCops then
-			local found = false
-			local playerCoords = GetEntityCoords(ped)
-			for a,b in pairs(ZYD.Heists) do
-				for c,d in pairs(b.Doors) do
-					if not d.obj[3] and #(playerCoords-d.hack["Coords"]) < 1.0 and veh == 0 then
-						if c == "Second" and not b.Doors["First"].obj[3] then break end
-						found = true
-						ESX.ShowHelpNotification(d.hack["Notifications"]["Help"])
-						if IsControlJustPressed(0,51) then
+		local found = false
+		local playerCoords = GetEntityCoords(ped)
+		for a,b in pairs(ZYD.Heists) do
+			for c,d in pairs(b.Doors) do
+				if not d.obj[3] and #(playerCoords-d.hack["Coords"]) < 1.0 and veh == 0 then
+					if c == "Second" and not b.Doors["First"].obj[3] then break end
+					found = true
+					ESX.ShowHelpNotification(d.hack["Notifications"]["Help"])
+					if IsControlJustPressed(0,51) then
+						ESX.TriggerServerCallback("Fleeca:PoliceCount", function(count)
+						if count >= ZYD.Config.RequiredCops then
 							ESX.TriggerServerCallback("Fleeca:Cooldown", function(can)
 								if can or c == "Second" then
 								ESX.TriggerServerCallback("Fleeca:HasItem", function(has)
 									if has then
 										local res = StartHack(d.hack)
 										if res == nil then
-											--
+											-- Hack not handled correctly
 										elseif res then
 											ESX.ShowNotification(d.hack["Notifications"]["Success"])
 											TriggerServerEvent("Fleeca:OpenDoors",a,c,GetToken())
@@ -59,17 +60,37 @@ CreateThread(function()
 									ESX.ShowNotification("Nie możesz jeszcze rozpocząć napadu!")
 								end
 							end)
+						else
+							ESX.ShowNotification("Nie ma wystarczająco funkcjonariuszy na służbie")
+						end
+						end)
+					end
+				end
+			end
+		end
+
+		for _,b in pairs(ZYD.Heists) do
+			if b.Doors["First"].obj[3] and b.Doors["Second"].obj[3] then
+				local coords = GetEntityCoords(ped)
+				for _,d in pairs(b.Loot) do
+					if #(d[1]-coords) < 1.0 then
+						local entity = GetClosestObjectOfType(coords, 1.5, `hei_prop_hei_cash_trolly_01`, false, false, false)
+						if entity ~= 0 and not IsEntityPlayingAnim(entity, "anim@heists@ornate_bank@grab_cash", "cart_cash_dissapear", 3) then
+							found = true
+							ESX.ShowHelpNotification("Naciśnij ~INPUT_CONTEXT~ aby zbierać kasę")
+							if IsControlJustPressed(0,51) then
+								Grab()
+							end
 						end
 					end
 				end
 			end
-			if not found then
-				Wait(1000)
-			end
-			Wait(3)
-		else
-			Wait(5000)
 		end
+
+		if not found then
+			Wait(1000)
+		end
+		Wait(3)
 	end
 end)
 
@@ -139,7 +160,7 @@ StartHack = function(hack)
 		DeleteEntity(drill)
 		StopGameplayCamShaking(true)
 	end
-	print(res)
+
 	DisabledKey = 0
 	FreezeEntityPosition(ped,false)
 	return res
@@ -233,7 +254,7 @@ function Cash()
 end
 
 function Grab()
-    local trolly = GetClosestObjectOfType(GetEntityCoords(ped), 1.3, GetHashKey("hei_prop_hei_cash_trolly_01"), false, false, false)
+    local trolly = GetClosestObjectOfType(GetEntityCoords(ped), 1.3, `hei_prop_hei_cash_trolly_01`, false, false, false)
 	local trollyCoords, trollyRotation = GetEntityCoords(trolly), GetEntityRotation(trolly)
 	while not NetworkHasControlOfEntity(trolly) do
 		Wait(5)

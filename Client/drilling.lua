@@ -154,12 +154,6 @@ local function SetupScaleform(scaleform)
     ButtonMessage("Zmniejsz prędkość")
     PopScaleformMovieFunctionVoid()
 
-    PushScaleformMovieFunction(scaleform, "SET_DATA_SLOT")
-    PushScaleformMovieFunctionParameterInt(4)
-    Button(GetControlInstructionalButton(2, 214, true)) -- The button to display
-    ButtonMessage("Przestań") -- the message to display next to it
-    PopScaleformMovieFunctionVoid()
-
     PushScaleformMovieFunction(scaleform, "DRAW_INSTRUCTIONAL_BUTTONS")
     PopScaleformMovieFunctionVoid()
 
