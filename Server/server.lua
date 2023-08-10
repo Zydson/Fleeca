@@ -1,6 +1,10 @@
 ---@diagnostic disable: param-type-mismatch
 ZYD.TokenLoaded = {}
 ZYD.Cooldown = true
+ZYD.Police = {
+	["Count"] = 0,
+	["CD"] = false,
+}
 ValidateToken = function(token)
 	local s = os.time()
 	local fraudScore = 0
@@ -96,6 +100,13 @@ ESX.RegisterServerCallback("Fleeca:Cooldown", function(source,cb)
 	cb(ZYD.Cooldown)
 end)
 
+ESX.RegisterServerCallback("Fleeca:PoliceCount", function(source,cb)
+	local count = CountPolice()
+	cb(count)
+	Wait(30000)
+	if ZYD.Police["CD"] then ZYD.Police["CD"] = false end
+end)
+
 --[[Functions]]--
 function StartCooldown()
 	CreateThread(function()
@@ -109,4 +120,15 @@ function StartCooldown()
 			end
 		end
 	end)
+end
+
+function CountPolice()
+	if not ZYD.Police["CD"] then
+		ZYD.Police["CD"] = true
+		ZYD.Police["Count"] = 0
+		for i=0, (GetNumPlayerIndices()-1) do 
+			if ESX.GetPlayerFromId(GetPlayerFromIndex(i)).getJob().name == "police" then ZYD.Police["Count"] = ZYD.Police["Count"]+1 end
+		end
+	end
+	return ZYD.Police["Count"]
 end
