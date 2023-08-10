@@ -1,4 +1,4 @@
-ESX = exports["RB_eng"]:getSharedObject()
+ESX = exports["es_extended"]:getSharedObject()
 ZYD = {
 	Config = {
 		Cooldown = 3600, -- Seconds
